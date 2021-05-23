@@ -196,5 +196,125 @@ TODO
 
 ## Orquestar una release de Helm
 
-TODO
+Crear la carpeta `gitops-series` para almacenar los manifiestos de esta aplicación:
 
+```bash
+mkdir -p ./clusters/demo/gitops-series
+```
+
+Crear el fichero `helmrelease` a través del comando `flux create`:
+
+```bash
+flux create hr echobot \
+    --interval=1m \
+    --source=HelmRepository/sngular.flux-system \
+    --chart=echobot \
+    --chart-version="0.2.1" \
+    --namespace=gitops-series \
+    --export > clusters/demo/gitops-series/echobot-hr.yaml
+```
+
+<details>
+  <summary>Resultado</summary>
+
+  ```
+  ---
+  apiVersion: helm.toolkit.fluxcd.io/v2beta1
+  kind: HelmRelease
+  metadata:
+    name: echobot
+    namespace: gitops-series
+  spec:
+    chart:
+      spec:
+        chart: echobot
+        sourceRef:
+          kind: HelmRepository
+          name: sngular
+          namespace: flux-system
+        version: 0.2.1
+    interval: 10m0s
+  ```
+</details>
+
+Adicionar los cambios en el repositorio
+
+```bash
+{
+  git add .
+  git commit -m 'Add echobot helmrelease file'
+  git push origin main
+}
+```
+
+Sincronizar la información sin esperara al ciclo de reconciliación:
+
+```bash
+flux reconcile kustomization flux-system --with-source
+```
+
+```bash
+flux reconcile hr echobot --with-source --namespace=gitops-series
+```
+
+<details>
+  <summary>Resultado</summary>
+
+  ```
+  ► annotating HelmRepository sngular in flux-system namespace
+  ✔ HelmRepository annotated
+  ◎ waiting for HelmRepository reconciliation
+  ✔ HelmRepository reconciliation completed
+  ✔ fetched revision 1314d3bbc30c959e6b9a2baecc8c54916499b4f3
+  ► annotating HelmRelease echobot in gitops-series namespace
+  ✔ HelmRelease annotated
+  ◎ waiting for HelmRelease reconciliation
+  ✔ HelmRelease reconciliation completed
+  ✔ applied revision 0.2.1
+  ```
+</details>
+
+Listar los chart registrados por flux:
+
+```bash
+flux get sources chart --all-namespaces
+```
+
+<details>
+  <summary>Resultado</summary>
+
+  ```
+  NAMESPACE  	NAME                 	READY	MESSAGE                	REVISION	SUSPENDED
+  flux-system	gitops-series-echobot	True 	Fetched revision: 0.2.1	0.2.1   	False
+  ```
+</details>
+
+Listar los objetos `helmreleases` desplegados:
+
+```bash
+flux get helmrelease --all-namespaces
+```
+
+<details>
+  <summary>Resultado</summary>
+
+  ```
+  NAMESPACE    	NAME   	READY	MESSAGE                         	REVISION	SUSPENDED
+  gitops-series	echobot	True 	Release reconciliation succeeded	0.2.1   	False
+  ```
+</details>
+
+Listar los pods del servicio desplegado:
+
+```bash
+kubectl get pods --namespace gitops-series
+```
+
+<details>
+  <summary>Resultado</summary>
+
+  ```
+  NAME                      READY   STATUS    RESTARTS   AGE
+  echobot-bcfb77fcd-cqnqj   1/1     Running   0          7m42s
+  ```
+</details>
