@@ -103,7 +103,7 @@ mkdir -p ./clusters/demo/sources
 
 ```bash
 flux create source helm sngular \
-  --url=https://sngular.github.io/gitops-helmrepository/charts \
+  --url=https://sngular.github.io/gitops-helmrepository/ \
   --interval=5m \
   --namespace=flux-system \
   --export > clusters/demo/sources/sngular-helmrepository.yaml
@@ -121,7 +121,7 @@ flux create source helm sngular \
     namespace: flux-system
   spec:
     interval: 5m0s
-    url: https://sngular.github.io/gitops-helmrepository/charts
+    url: https://sngular.github.io/gitops-helmrepository/
   ```
 </details>
 
@@ -185,8 +185,8 @@ flux get source helm --all-namespaces
   <summary>Resultado</summary>
 
   ```
-  NAMESPACE  	NAME   	READY	MESSAGE                                                   	REVISION                                	SUSPENDED 
-  flux-system	sngular	True 	Fetched revision: 3f33f697ef0499ad9d54052b1e791c271df1dffd	3f33f697ef0499ad9d54052b1e791c271df1dffd	False    	
+  NAMESPACE  	NAME   	READY	MESSAGE                                                   	REVISION                                	SUSPENDED
+  flux-system	sngular	True 	Fetched revision: 3f33f697ef0499ad9d54052b1e791c271df1dffd	3f33f697ef0499ad9d54052b1e791c271df1dffd	False
   ```
 </details>
 
