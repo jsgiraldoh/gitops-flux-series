@@ -152,10 +152,16 @@ Realice un commit con los cambios al repositorio de código:
 }
 ```
 
+Sincronizar la información sin esperara al ciclo de reconciliación:
+
+```bash
+flux reconcile source git flux-system
+```
+
 Esperar a que se realice la sincronización del repositorio o indicarle a Flux que realice el ciclo de reconciliación de manera inmediata:
 
 ```bash
-flux reconcile kustomization flux-system --with-source
+flux reconcile source helm sngular
 ```
 
 <details>
