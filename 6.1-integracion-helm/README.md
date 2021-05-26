@@ -2,7 +2,7 @@
 
 En esta sección se mostrará la manera en la que Flux utiliza recursos para integrarse con [Helm](https://helm.sh/).
 
-Vídeo de la explicación y la demo completa en este [enlace](https://www.youtube.com/watch?v=wQZ01-3vXBI&list=PLuQL-CB_D1E7gRzUGlchvvmGDF1rIiWkj&index=5).
+Vídeo de la explicación y la demo completa en este [enlace](https://www.youtube.com/watch?v=wQZ01-3vXBI&list=PLuQL-CB_D1E7gRzUGlchvvmGDF1rIiWkj&index=6).
 
 ## Requisitos
 
@@ -152,7 +152,7 @@ Realice un commit con los cambios al repositorio de código:
 }
 ```
 
-Esperar a que se realice la sincronización con del repositorio o indicarle a Flux que realice el ciclo de reconciliación de manera inmediata:
+Esperar a que se realice la sincronización del repositorio o indicarle a Flux que realice el ciclo de reconciliación de manera inmediata:
 
 ```bash
 flux reconcile kustomization flux-system --with-source
@@ -175,7 +175,7 @@ flux reconcile kustomization flux-system --with-source
   ```
 </details>
 
-Comprobar que el objeto `HelmRepository` está preparado y ha detectado charts:
+Comprobar que el estado del objeto `HelmRepository` en el campo `READY` sea `True`:
 
 ```bash
 flux get source helm --all-namespaces
@@ -190,28 +190,35 @@ flux get source helm --all-namespaces
   ```
 </details>
 
-## Desplegar un chart sencillo
+## Desplegar una release de Helm
 
-TODO
-
-## Orquestar una release de Helm
-
-Crear la carpeta `gitops-series` para almacenar los manifiestos de esta aplicación:
+Crear la carpeta `gitops-series` para almacenar los manifiestos de despliegue:
 
 ```bash
 mkdir -p ./clusters/demo/gitops-series
 ```
 
+Crear el fichero del namespace:
+
+```bash
+cat <<EOF > ./clusters/demo/gitops-series/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitops-series
+EOF
+```
+
 Crear el fichero `helmrelease` a través del comando `flux create`:
 
 ```bash
-flux create hr echobot \
+flux create helmrelease echobot \
     --interval=1m \
     --source=HelmRepository/sngular.flux-system \
     --chart=echobot \
     --chart-version="0.2.1" \
     --namespace=gitops-series \
-    --export > clusters/demo/gitops-series/echobot-hr.yaml
+    --export > clusters/demo/gitops-series/echobot-helmrelease.yaml
 ```
 
 <details>
@@ -237,7 +244,7 @@ flux create hr echobot \
   ```
 </details>
 
-Adicionar los cambios en el repositorio
+Añadir los cambios en el repositorio:
 
 ```bash
 {
@@ -250,22 +257,17 @@ Adicionar los cambios en el repositorio
 Sincronizar la información sin esperara al ciclo de reconciliación:
 
 ```bash
-flux reconcile kustomization flux-system --with-source
+flux reconcile source git flux-system
 ```
 
 ```bash
-flux reconcile hr echobot --with-source --namespace=gitops-series
+flux reconcile helmrelease echobot --namespace=gitops-series
 ```
 
 <details>
   <summary>Resultado</summary>
 
   ```
-  ► annotating HelmRepository sngular in flux-system namespace
-  ✔ HelmRepository annotated
-  ◎ waiting for HelmRepository reconciliation
-  ✔ HelmRepository reconciliation completed
-  ✔ fetched revision 1314d3bbc30c959e6b9a2baecc8c54916499b4f3
   ► annotating HelmRelease echobot in gitops-series namespace
   ✔ HelmRelease annotated
   ◎ waiting for HelmRelease reconciliation
@@ -316,5 +318,56 @@ kubectl get pods --namespace gitops-series
   ```
   NAME                      READY   STATUS    RESTARTS   AGE
   echobot-bcfb77fcd-cqnqj   1/1     Running   0          7m42s
+  ```
+</details>
+
+## (Opcional) Desintalar Flux
+
+Utilice el siguiente comando para desintalar flux del cluster:
+
+```bash
+flux uninstall
+```
+
+> Compruebe que el repositorio en GitHub no ha sido eliminado.
+
+<details>
+  <summary>Resultado</summary>
+
+  ```bash
+  Are you sure you want to delete Flux and its custom resource definitions: y█
+  ► deleting components in flux-system namespace
+  ✔ Deployment/flux-system/helm-controller deleted
+  ✔ Deployment/flux-system/kustomize-controller deleted
+  ✔ Deployment/flux-system/notification-controller deleted
+  ✔ Deployment/flux-system/source-controller deleted
+  ✔ Service/flux-system/notification-controller deleted
+  ✔ Service/flux-system/source-controller deleted
+  ✔ Service/flux-system/webhook-receiver deleted
+  ✔ NetworkPolicy/flux-system/allow-egress deleted
+  ✔ NetworkPolicy/flux-system/allow-scraping deleted
+  ✔ NetworkPolicy/flux-system/allow-webhooks deleted
+  ✔ ServiceAccount/flux-system/helm-controller deleted
+  ✔ ServiceAccount/flux-system/kustomize-controller deleted
+  ✔ ServiceAccount/flux-system/notification-controller deleted
+  ✔ ServiceAccount/flux-system/source-controller deleted
+  ✔ ClusterRole/crd-controller-flux-system deleted
+  ✔ ClusterRoleBinding/cluster-reconciler-flux-system deleted
+  ✔ ClusterRoleBinding/crd-controller-flux-system deleted
+  ► deleting toolkit.fluxcd.io finalizers in all namespaces
+  ✔ GitRepository/flux-system/flux-system finalizers deleted
+  ✔ Kustomization/flux-system/flux-system finalizers deleted
+  ► deleting toolkit.fluxcd.io custom resource definitions
+  ✔ CustomResourceDefinition/alerts.notification.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/buckets.source.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/gitrepositories.source.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/helmcharts.source.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/helmreleases.helm.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/helmrepositories.source.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/kustomizations.kustomize.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/providers.notification.toolkit.fluxcd.io deleted
+  ✔ CustomResourceDefinition/receivers.notification.toolkit.fluxcd.io deleted
+  ✔ Namespace/flux-system deleted
+  ✔ uninstall finished
   ```
 </details>
